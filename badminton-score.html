@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>羽毛球计分板（实时同步版）</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "Arial", "Microsoft YaHei", sans-serif;
+        }
+        
+        body {
+            background-color: #f0f2f5;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            max-width: 600px;
+            margin: 0 auto;
+            width: 100%;
+        }
+        
+        .score-board {
+            background: white;
+            border-radius: 16px;
+            padding: 30px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+        }
+        
+        .team {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .team-name {
+            font-size: 24px;
+            font-weight: 600;
+            color: #1d2129;
+            padding: 10px 20px;
+            border-radius: 8px;
+            background: #e7f3ff;
+            min-width: 120px;
+            text-align: center;
+        }
+        
+        .score {
+            font-size: 48px;
+            font-weight: 700;
+            color: #0066cc;
+            min-width: 100px;
+            text-align: center;
+        }
+        
+        .controls {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .btn-primary {
+            background: #0066cc;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #0052a3;
+        }
+        
+        .btn-danger {
+            background: #f53f3f;
+            color: white;
+        }
+        
+        .btn-danger:hover {
+            background: #d92121;
+        }
+        
+        .reset-section {
+            display: flex;
+            justify-content: center;
+            margin-top: 10px;
+        }
+        
+        .btn-reset {
+            padding: 12px 30px;
+            font-size: 20px;
+            background: #ff7d00;
+            color: white;
+        }
+        
+        .btn-reset:hover {
+            background: #e06e00;
+        }
+        
+        /* 加载提示样式 */
+        .loading {
+            text-align: center;
+            font-size: 18px;
+            color: #666;
+            padding: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="score-board">
+            <div class="team">
+                <div class="team-name">A队</div>
+                <div class="score" id="scoreA">0</div>
+                <div class="controls">
+                    <button class="btn btn-primary" onclick="changeScore('A', 1)">+1</button>
+                    <button class="btn btn-danger" onclick="changeScore('A', -1)">-1</button>
+                </div>
+            </div>
+            
+            <div class="team">
+                <div class="team-name">B队</div>
+                <div class="score" id="scoreB">0</div>
+                <div class="controls">
+                    <button class="btn btn-primary" onclick="changeScore('B', 1)">+1</button>
+                    <button class="btn btn-danger" onclick="changeScore('B', -1)">-1</button>
+                </div>
+            </div>
+            
+            <div class="reset-section">
+                <button class="btn btn-reset" onclick="resetScores()">重置比分</button>
+            </div>
+            
+            <div class="loading" id="loadingTip">正在初始化数据同步...</div>
+        </div>
+    </div>
+
+    <!-- 引入腾讯云开发 SDK -->
+    <script src="https://imgcache.qq.com/qcloud/tcbjs/1.26.0/tcb.js"></script>
+    
+    <script>
+        // 初始化云开发 - 已匹配你的环境ID
+        const app = tcb.init({
+            env: "badminton-score-2g9bci7r2f4a9024"
+        });
+        
+        // 全局变量
+        let db;
+        let scoreDoc;
+        const loadingTip = document.getElementById('loadingTip');
+
+        // 初始化数据库连接
+        async function initDB() {
+            try {
+                // 匿名登录（无需用户授权）
+                await app.auth({
+                    persistence: "local"
+                }).anonymousAuthProvider().signIn();
+                
+                // 获取数据库实例（集合名：badminton_scores）
+                db = app.database();
+                const scoreCollection = db.collection('badminton_scores');
+                
+                // 查找或创建比分文档（固定ID：shared_score，确保所有设备访问同一数据）
+                const res = await scoreCollection.doc('shared_score').get();
+                
+                if (res.data.length === 0) {
+                    // 首次使用，初始化比分数据
+                    await scoreCollection.doc('shared_score').set({
+                        scoreA: 0,
+                        scoreB: 0,
+                        updateTime: db.serverDate()
+                    });
+                    scoreDoc = { scoreA: 0, scoreB: 0 };
+                } else {
+                    // 加载已有比分数据
+                    scoreDoc = res.data[0];
+                }
+                
+                // 更新UI显示最新比分
+                updateUI();
+                loadingTip.textContent = "数据同步已就绪，支持多设备实时更新";
+                
+                // 监听数据变化（实时同步核心功能）
+                scoreCollection.doc('shared_score').watch({
+                    onChange: (snapshot) => {
+                        scoreDoc = snapshot.docs[0];
+                        updateUI(); // 数据变化时自动更新所有设备的UI
+                    },
+                    onError: (err) => {
+                        console.error('监听数据失败：', err);
+                        loadingTip.textContent = "数据同步异常，刷新重试";
+                    }
+                });
+                
+            } catch (err) {
+                console.error('数据库初始化失败：', err);
+                loadingTip.textContent = "初始化失败，请刷新页面";
+                alert('数据同步初始化失败，请检查网络或刷新页面重试');
+            }
+        }
+        
+        // 更新UI显示比分
+        function updateUI() {
+            document.getElementById('scoreA').textContent = scoreDoc.scoreA;
+            document.getElementById('scoreB').textContent = scoreDoc.scoreB;
+        }
+        
+        // 修改比分（+1/-1）
+        async function changeScore(team, delta) {
+            // 未初始化完成时禁止操作
+            if (!db) {
+                alert('数据还在初始化中，请稍候');
+                return;
+            }
+
+            // 计算新比分（确保比分不小于0）
+            const newScore = {
+                scoreA: team === 'A' ? Math.max(0, scoreDoc.scoreA + delta) : scoreDoc.scoreA,
+                scoreB: team === 'B' ? Math.max(0, scoreDoc.scoreB + delta) : scoreDoc.scoreB,
+                updateTime: db.serverDate()
+            };
+            
+            try {
+                // 更新数据库，所有设备会通过watch实时同步
+                await db.collection('badminton_scores').doc('shared_score').update(newScore);
+            } catch (err) {
+                console.error('更新比分失败：', err);
+                alert('更新比分失败，请检查网络或重试');
+            }
+        }
+        
+        // 重置比分到0
+        async function resetScores() {
+            if (!db) {
+                alert('数据还在初始化中，请稍候');
+                return;
+            }
+
+            // 确认重置
+            if (!confirm('确定要重置所有比分吗？')) {
+                return;
+            }
+            
+            try {
+                await db.collection('badminton_scores').doc('shared_score').update({
+                    scoreA: 0,
+                    scoreB: 0,
+                    updateTime: db.serverDate()
+                });
+                alert('比分已重置！');
+            } catch (err) {
+                console.error('重置比分失败：', err);
+                alert('重置比分失败，请重试');
+            }
+        }
+        
+        // 页面加载完成后自动初始化
+        window.onload = initDB;
+    </script>
+</body>
+</html>
