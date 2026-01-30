@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <script src="https://imgcache.qq.com/qcloud/tcbjs/1.26.0/tcb.js"></script>
+</head>
+<body>
+  <div id="result"></div>
+  <script>
+    const app = tcb.init({ env: "你的环境ID" });
+    async function test() {
+      try {
+        // 匿名登录
+        await app.auth().anonymousAuthProvider().signIn();
+        // 操作数据库
+        const db = app.database();
+        await db.collection('test').add({ text: "测试数据" });
+        const res = await db.collection('test').get();
+        document.getElementById('result').innerText = "云同步成功！数据：" + JSON.stringify(res.data);
+      } catch (err) {
+        document.getElementById('result').innerText = "失败原因：" + err.message;
+      }
+    }
+    test();
+  </script>
+</body>
+</html>
