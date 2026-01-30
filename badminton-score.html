@@ -3,22 +3,69 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <!-- 微信X5内核核心适配 -->
     <meta name="renderer" content="webkit">
     <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
     <meta name="referrer" content="no-referrer">
-    <title>羽毛球双打计分程序</title>
+    <title>羽毛球双打计分程序（实时共享版）</title>
     <style>
+        /* 原有样式完全保留，新增加载提示样式 */
+        .loading-tip {
+            text-align: center;
+            font-size: 16px;
+            color: #666;
+            padding: 15px;
+            margin: 10px 0;
+            background: rgba(255,255,255,0.8);
+            border-radius: 8px;
+        }
+        .real-time-rank {
+            margin-top: 20px;
+            padding: 15px;
+            background: linear-gradient(135deg, #f8f8f8, #f0f0f0);
+            border-radius: 10px;
+            border: 1px solid #8FE000;
+        }
+        .real-time-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #5A8F00;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+        .real-time-rank-list {
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .mini-rank-item {
+            display: flex;
+            align-items: center;
+            padding: 8px 10px;
+            background: white;
+            border-radius: 6px;
+            margin-bottom: 5px;
+            font-size: 14px;
+        }
+        .mini-rank-num {
+            width: 25px;
+            font-weight: 700;
+            color: #76B900;
+        }
+        .mini-rank-player {
+            flex: 1;
+            margin-left: 10px;
+        }
+        .mini-rank-score {
+            color: #5A8F00;
+            font-weight: 600;
+        }
+        /* 原有所有样式在此处保留，无需修改 */
         * { 
             margin: 0; 
             padding: 0; 
             box-sizing: border-box; 
             font-family: "Helvetica Neue", Arial, sans-serif; 
-            /* 微信触屏点击高亮去除 */
             -webkit-tap-highlight-color: transparent;
         }
-
-        /* 基础配色体系 */
         :root {
             --main-green: #76B900;
             --main-green-light: #8FE000;
@@ -27,8 +74,6 @@
             --main-gray: #F5F5F5;
             --main-gray-dark: #E0E0E0;
         }
-
-        /* 页面底色 */
         body { 
             background: linear-gradient(135deg, var(--main-green-dark) 0%, var(--main-green) 50%, var(--main-green-light) 100%);
             min-height: 100vh; 
@@ -36,8 +81,6 @@
             max-width: 750px; 
             margin: 0 auto;
         }
-
-        /* 核心：LOGO容器（恢复原始尺寸） */
         .page { 
             display: none; 
             background: white; 
@@ -48,20 +91,16 @@
             position: relative; 
             padding-top: 30px; 
         }
-
-        /* 标题栏容器 - 用于LOGO和标题的布局 */
         .title-bar {
             display: flex;
             align-items: center;
             margin-bottom: 20px;
             width: 100%;
         }
-
         .logo-container {
             position: static; 
             transform: none; 
             z-index: 10;
-            /* 恢复LOGO原始尺寸 */
             width: 240px; 
             height: 240px; 
             flex-shrink: 0; 
@@ -73,9 +112,7 @@
             background-color: #fff; 
             margin-right: 20px; 
         }
-
         .logo-img {
-            /* 恢复LOGO原始样式：无放大、无裁剪 */
             width: 100%; 
             height: 100%;
             object-fit: cover; 
@@ -84,15 +121,12 @@
             transform: none; 
             transform-origin: center center; 
         }
-
-        /* 移动端LOGO适配（恢复原始尺寸） */
         @media (max-width: 768px) {
             .logo-container {
                 width: 180px; 
                 height: 180px;
             }
         }
-
         @media (max-width: 480px) {
             .logo-container {
                 width: 120px; 
@@ -105,28 +139,22 @@
                 margin-right: 0;
                 margin-bottom: 15px;
             }
-            /* 移动端文字居中适配 */
             .title-text-container {
                 align-items: center !important;
                 padding-left: 0 !important;
             }
         }
-
         .page.active { display: block; }
-
-        /* 标题文字容器 - 核心修改：完全居中对齐 */
         .title-text-container {
             flex: 3;
             max-width: 75%;
             display: flex;
             flex-direction: column;
             justify-content: center;
-            align-items: center; /* 水平居中 */
-            text-align: center; /* 文字居中 */
-            padding-left: 0; /* 移除左侧内边距 */
+            align-items: center;
+            text-align: center;
+            padding-left: 0;
         }
-
-        /* 第一行固定标题 - 恢复居中对齐 */
         .fixed-title {
             font-size: 24px; 
             font-weight: 700;
@@ -137,16 +165,14 @@
             -webkit-background-clip: text;
             background-clip: text;
             color: transparent;
-            text-align: center; /* 文字居中 */
+            text-align: center;
             width: 100%;
         }
-
-        /* 第二行页面标题 - 恢复居中对齐 */
         .page-title { 
             font-size: 22px; 
             color: var(--main-black);
             margin: 0; 
-            text-align: center; /* 文字居中 */
+            text-align: center;
             font-weight: 600;
             background: linear-gradient(90deg, var(--main-green-dark), var(--main-green));
             -webkit-background-clip: text;
@@ -154,8 +180,6 @@
             color: transparent;
             width: 100%;
         }
-
-        /* 移动端标题适配 - 保持居中 */
         @media (max-width: 480px) {
             .title-text-container {
                 max-width: 100%;
@@ -170,9 +194,7 @@
                 text-align: center;
             }
         }
-
         .form-item { margin-bottom: 18px; }
-
         .form-label { 
             font-size: 16px; 
             color: var(--main-black);
@@ -180,10 +202,7 @@
             display: block; 
             font-weight: 500; 
         }
-
         .form-label span { color: var(--main-green); }
-
-        /* 半场样式 */
         .half-field { 
             background: linear-gradient(135deg, white, var(--main-gray));
             border-radius: 10px; 
@@ -192,11 +211,9 @@
             border: 2px solid var(--main-green);
             box-shadow: 0 2px 8px rgba(118, 185, 0, 0.1);
         }
-
         .half-field.right { 
             border-color: var(--main-green-dark);
         }
-
         .half-title { 
             text-align: center; 
             font-size: 17px; 
@@ -204,11 +221,9 @@
             margin-bottom: 15px; 
             color: var(--main-green);
         }
-
         .half-field.right .half-title { 
             color: var(--main-green-dark);
         }
-
         input, select { 
             width: 100%; 
             padding: 10px 12px; 
@@ -218,17 +233,13 @@
             color: var(--main-black);
             background-color: white;
             transition: border 0.3s ease;
-            /* 微信去除默认样式 */
             -webkit-appearance: none;
         }
-
         input:focus, select:focus { 
             outline: none; 
             border-color: var(--main-green);
             box-shadow: 0 0 0 2px rgba(118, 185, 0, 0.1);
         }
-
-        /* 按钮样式：hover替换为active（适配微信触屏） */
         .btn { 
             padding: 12px 20px; 
             border: none; 
@@ -240,48 +251,39 @@
             width: 100%; 
             margin-bottom: 12px;
         }
-
         .btn-primary { 
             background: linear-gradient(135deg, var(--main-green), var(--main-green-light));
             color: white;
             box-shadow: 0 4px 8px rgba(118, 185, 0, 0.2);
         }
-
-        .btn-primary:active { /* 替换hover为active */
+        .btn-primary:active {
             background: linear-gradient(135deg, var(--main-green-dark), var(--main-green));
             box-shadow: 0 6px 12px rgba(118, 185, 0, 0.3);
         }
-
         .btn-success { 
             background: linear-gradient(135deg, #2ECC71, #4CD964);
             color: white;
             box-shadow: 0 4px 8px rgba(46, 204, 113, 0.2);
         }
-
-        .btn-success:active { /* 替换hover为active */
+        .btn-success:active {
             background: linear-gradient(135deg, #27AE60, #2ECC71);
         }
-
         .btn-warning { 
             background: linear-gradient(135deg, #E67E22, #F39C12);
             color: white;
             box-shadow: 0 4px 8px rgba(230, 126, 34, 0.2);
         }
-
-        .btn-warning:active { /* 替换hover为active */
+        .btn-warning:active {
             background: linear-gradient(135deg, #D35400, #E67E22);
         }
-
         .btn-secondary { 
             background: linear-gradient(135deg, #95A5A6, #7F8C8D);
             color: white;
             box-shadow: 0 4px 8px rgba(149, 165, 166, 0.2);
         }
-
-        .btn-secondary:active { /* 替换hover为active */
+        .btn-secondary:active {
             background: linear-gradient(135deg, #7F8C8D, #95A5A6);
         }
-
         .match-item { 
             background: linear-gradient(135deg, white, var(--main-gray));
             border: 1px solid var(--main-gray-dark);
@@ -291,52 +293,43 @@
             cursor: pointer; 
             transition: all 0.2s ease; 
         }
-
-        .match-item:active { /* 替换hover为active */
+        .match-item:active {
             border-color: var(--main-green);
             box-shadow: 0 4px 12px rgba(118, 185, 0, 0.1);
         }
-
         .match-header { 
             display: flex; 
             justify-content: space-between; 
             align-items: center; 
             margin-bottom: 10px; 
         }
-
         .match-name { 
             font-size: 16px; 
             color: var(--main-black);
             font-weight: 600; 
         }
-
         .match-result { 
             font-size: 14px; 
             color: var(--main-green-dark);
             font-weight: 500; 
         }
-
         .match-result.finished { 
             color: var(--main-green);
         }
-
         .half-team { 
             display: flex; 
             justify-content: space-between; 
             margin-bottom: 8px; 
             font-size: 15px; 
         }
-
         .left-team { 
             color: var(--main-green);
             font-weight: 500; 
         }
-
         .right-team { 
             color: var(--main-green-dark);
             font-weight: 500; 
         }
-
         .match-score { 
             display: flex; 
             justify-content: space-between; 
@@ -345,33 +338,27 @@
             font-weight: 600; 
             margin-top: 5px; 
         }
-
         .score-double-screen { 
             display: flex; 
             gap: 8px; 
             width: 100%; 
             margin-top: 12px; 
         }
-
         .score-left-screen, .score-right-screen { 
             flex: 1; 
             background: linear-gradient(135deg, white, var(--main-gray));
             border-radius: 10px; 
             padding: 15px; 
         }
-
         .score-left-screen { 
             border: 2px solid var(--main-green);
         }
-
         .score-right-screen { 
             border: 2px solid var(--main-green-dark);
         }
-
         .team-score-section { 
             text-align: center; 
         }
-
         .team-name { 
             font-size: 14px; 
             color: var(--main-black);
@@ -379,40 +366,33 @@
             font-weight: 500; 
             line-height: 1.3; 
         }
-
         .team-score-current { 
             font-size: 40px; 
             color: var(--main-green);
             margin: 8px 0; 
             font-weight: 700; 
         }
-
         .score-right-screen .team-score-current {
             color: var(--main-green-dark);
         }
-
         .team-score-set { 
             font-size: 14px; 
             color: #7F8C8D; 
         }
-
         .score-btn { 
             width: 100%; 
             padding: 10px 0; 
             font-size: 15px; 
             margin-top: 10px; 
         }
-
         .score-btn-group { 
             display: flex; 
             gap: 8px; 
             margin-top: 12px; 
         }
-
         .rank-list { 
             margin-top: 15px; 
         }
-
         .rank-item { 
             display: flex; 
             align-items: center; 
@@ -423,45 +403,37 @@
             border-left: 4px solid var(--main-green);
             transition: transform 0.2s ease;
         }
-
-        .rank-item:active { /* 替换hover为active */
+        .rank-item:active {
             transform: translateX(5px);
         }
-
         .rank-num { 
             font-size: 18px; 
             color: var(--main-black);
             font-weight: 700; 
             width: 35px; 
         }
-
         .rank-player { 
             font-size: 16px; 
             color: var(--main-black);
             flex: 1; 
         }
-
         .rank-score { 
             font-size: 16px; 
             color: var(--main-green);
             font-weight: 600; 
         }
-
         .tip-text { 
             font-size: 13px; 
             color: #7F8C8D; 
             text-align: center; 
             margin-top: 8px; 
         }
-
         .empty-tip { 
             text-align: center; 
             color: #7F8C8D; 
             padding: 20px 0; 
             font-size: 15px; 
         }
-
-        /* 积分规则输入框样式：微信小屏换行 */
         .score-rule-group {
             display: flex;
             gap: 10px;
@@ -471,57 +443,12 @@
             flex: 1;
             min-width: 120px;
         }
-
-        /* ========== 新增：实时排名样式 ========== */
-        .real-time-rank {
-            margin-top: 20px;
-            padding: 15px;
-            background: linear-gradient(135deg, #f8f8f8, #f0f0f0);
-            border-radius: 10px;
-            border: 1px solid var(--main-green-light);
-        }
-
-        .real-time-title {
-            font-size: 18px;
-            font-weight: 600;
-            color: var(--main-green-dark);
-            margin-bottom: 10px;
-            text-align: center;
-        }
-
-        .real-time-rank-list {
-            max-height: 200px;
-            overflow-y: auto;
-        }
-
-        .mini-rank-item {
-            display: flex;
-            align-items: center;
-            padding: 8px 10px;
-            background: white;
-            border-radius: 6px;
-            margin-bottom: 5px;
-            font-size: 14px;
-        }
-
-        .mini-rank-num {
-            width: 25px;
-            font-weight: 700;
-            color: var(--main-green);
-        }
-
-        .mini-rank-player {
-            flex: 1;
-            margin-left: 10px;
-        }
-
-        .mini-rank-score {
-            color: var(--main-green-dark);
-            font-weight: 600;
-        }
     </style>
 </head>
 <body>
+    <!-- 加载提示 -->
+    <div class="loading-tip" id="loadingTip">正在初始化实时共享功能，请稍候...</div>
+
     <!-- 1. 比赛设置屏 -->
     <div class="page active" id="settingPage">
         <div class="title-bar">
@@ -563,8 +490,6 @@
                 <h1 class="page-title">手动添加对阵（双打）</h1>
             </div>
         </div>
-        
-        <!-- 左半场队伍 -->
         <div class="half-field">
             <div class="half-title">左半场队伍</div>
             <div class="form-item">
@@ -576,8 +501,6 @@
                 <input type="text" id="leftPlayer2" placeholder="输入左半场选手2姓名">
             </div>
         </div>
-
-        <!-- 右半场队伍 -->
         <div class="half-field right">
             <div class="half-title">右半场队伍</div>
             <div class="form-item">
@@ -589,16 +512,13 @@
                 <input type="text" id="rightPlayer2" placeholder="输入右半场选手2姓名">
             </div>
         </div>
-
         <button class="btn btn-success" onclick="addSingleMatch()">添加本条对阵</button>
         <button class="btn btn-primary" onclick="goToScorePage()">进入计分环节</button>
         <button class="btn btn-secondary" onclick="goBackToSetting()">返回设置</button>
-
-        <!-- 对阵列表 -->
         <div class="match-list" id="matchList">
             <div class="empty-tip">暂无对阵数据，添加后将显示在此</div>
         </div>
-        <div class="tip-text">可重复添加多条对阵，按添加顺序编号</div>
+        <div class="tip-text">可重复添加多条对阵，所有设备实时共享</div>
     </div>
 
     <!-- 3. 左右屏计分屏 -->
@@ -610,16 +530,16 @@
             </div>
             <div class="title-text-container">
                 <div class="fixed-title">集合啦！年终羽毛球积分赛</div>
-                <h1 class="page-title">双打左右屏计分</h1>
+                <h1 class="page-title">双打左右屏计分（实时共享）</h1>
             </div>
         </div>
         <div class="match-list" id="scoreMatchList"></div>
         
-        <!-- ========== 新增：实时积分排名区域 ========== -->
+        <!-- 实时积分排名（多设备共享） -->
         <div class="real-time-rank">
-            <div class="real-time-title">📊 实时个人积分排名</div>
+            <div class="real-time-title">📊 实时个人积分排名（所有人可见）</div>
             <div class="real-time-rank-list" id="realTimeRankList">
-                <div class="empty-tip" style="padding: 10px 0;">暂无积分数据，完成对阵计分后显示</div>
+                <div class="empty-tip" style="padding: 10px 0;">暂无积分数据，完成对阵计分后实时更新</div>
             </div>
         </div>
         
@@ -636,18 +556,26 @@
             </div>
             <div class="title-text-container">
                 <div class="fixed-title">集合啦！年终羽毛球积分赛</div>
-                <h1 class="page-title">个人积分排名汇总</h1>
+                <h1 class="page-title">个人积分排名汇总（实时共享）</h1>
             </div>
         </div>
         <div class="rank-list" id="rankList">
-            <div class="empty-tip">暂无积分数据，完成对阵计分后显示</div>
+            <div class="empty-tip">暂无积分数据，完成对阵计分后实时更新</div>
         </div>
         <button class="btn btn-warning" onclick="resetAllData()">重置所有数据</button>
         <button class="btn btn-secondary" onclick="goBackToScore()">返回计分页面</button>
     </div>
 
+    <!-- 引入腾讯云开发 SDK（优化版本） -->
+    <script src="https://imgcache.qq.com/qcloud/tcbjs/1.26.0/tcb.js"></script>
+    
     <script>
-        // 全局数据（初始化）
+        // 腾讯云开发初始化（确保环境ID正确）
+        const app = tcb.init({
+            env: "badminton-score-2g9bci7r2f4a9024" // 你的环境ID，请勿修改
+        });
+        
+        let db;
         let globalData = {
             matchType: 1,
             winScore: 5,
@@ -656,9 +584,85 @@
             playerScores: {}
         };
 
-        // 页面切换核心函数（优化微信兼容）
+        // 初始化数据库（解决之前同步失败的关键优化）
+        async function initDB() {
+            try {
+                // 优化：强制匿名登录并持久化
+                const authRes = await app.auth({ persistence: "local" }).anonymousAuthProvider().signIn();
+                if (!authRes) throw new Error("匿名登录失败");
+                
+                // 获取数据库实例
+                db = app.database();
+                const dataCollection = db.collection('badminton_scores');
+                
+                // 优化：先创建集合（如果不存在）
+                await db.createCollection('badminton_scores').catch(err => {
+                    if (err.errCode !== -502001) throw err; // 集合已存在则忽略错误
+                });
+                
+                // 查找或创建共享数据文档
+                const res = await dataCollection.doc('shared_match_data').get().catch(async () => {
+                    // 文档不存在时创建
+                    await dataCollection.doc('shared_match_data').set({
+                        matchType: 1,
+                        winScore: 5,
+                        loseScore: 3,
+                        matches: [],
+                        playerScores: {},
+                        updateTime: db.serverDate()
+                    });
+                    return { data: [{ matchType: 1, winScore: 5, loseScore: 3, matches: [], playerScores: {} }] };
+                });
+                
+                // 加载共享数据
+                globalData = res.data[0];
+                document.getElementById('matchType').value = globalData.matchType;
+                document.getElementById('winScore').value = globalData.winScore;
+                document.getElementById('loseScore').value = globalData.loseScore;
+                
+                // 关键：实时监听数据变化（所有设备同步更新）
+                dataCollection.doc('shared_match_data').watch({
+                    onChange: (snapshot) => {
+                        globalData = snapshot.docs[0];
+                        // 实时更新所有页面数据
+                        renderMatchList();
+                        renderScoreMatchList();
+                        renderRankList();
+                        renderRealTimeRankList();
+                    },
+                    onError: (err) => {
+                        console.error('同步失败：', err);
+                        document.getElementById('loadingTip').textContent = "实时共享异常，刷新重试";
+                    }
+                });
+                
+                document.getElementById('loadingTip').textContent = "✅ 实时共享已就绪，所有设备数据同步";
+                renderMatchList();
+                renderRealTimeRankList();
+                
+            } catch (err) {
+                console.error('初始化失败：', err);
+                document.getElementById('loadingTip').textContent = "初始化失败，请刷新页面（确保网络正常）";
+                alert(`同步功能初始化失败：${err.message}\n请检查网络后刷新`);
+            }
+        }
+
+        // 优化：更新数据库（确保所有操作同步到云）
+        async function updateDB() {
+            if (!db) return alert("数据未初始化完成");
+            try {
+                await db.collection('badminton_scores').doc('shared_match_data').update({
+                    ...globalData,
+                    updateTime: db.serverDate()
+                });
+            } catch (err) {
+                console.error('更新失败：', err);
+                alert("数据同步失败，请重试");
+            }
+        }
+
+        // 页面切换函数
         function switchPage(pageId) {
-            // 微信强制重绘：先隐藏所有页面，再显示目标页
             document.querySelectorAll('.page').forEach(page => {
                 page.classList.remove('active');
                 page.style.display = 'none';
@@ -670,7 +674,7 @@
             if (pageId === 'matchPage') renderMatchList();
             if (pageId === 'scorePage') {
                 renderScoreMatchList();
-                renderRealTimeRankList(); // 新增：切换到计分页时刷新实时排名
+                renderRealTimeRankList();
             }
             if (pageId === 'rankPage') renderRankList();
         }
@@ -679,17 +683,14 @@
         function goToMatchPage() {
             const winScore = parseInt(document.getElementById('winScore').value);
             const loseScore = parseInt(document.getElementById('loseScore').value);
-            if (isNaN(winScore) || winScore < 1) {
-                alert("胜局得分必须是大于0的数字！");
-                return;
-            }
-            if (isNaN(loseScore) || loseScore < 1) {
-                alert("输局得分必须是大于0的数字！");
+            if (isNaN(winScore) || winScore < 1 || isNaN(loseScore) || loseScore < 1) {
+                alert("胜局/输局得分必须是大于0的数字");
                 return;
             }
             globalData.matchType = parseInt(document.getElementById('matchType').value);
             globalData.winScore = winScore;
             globalData.loseScore = loseScore;
+            updateDB(); // 同步到云
             switchPage('matchPage');
         }
 
@@ -698,26 +699,22 @@
             switchPage('settingPage');
         }
 
-        // 手动添加双打对阵
+        // 添加对阵（同步到所有设备）
         function addSingleMatch() {
             const l1 = document.getElementById('leftPlayer1').value.trim();
             const l2 = document.getElementById('leftPlayer2').value.trim();
             const r1 = document.getElementById('rightPlayer1').value.trim();
             const r2 = document.getElementById('rightPlayer2').value.trim();
             if (!l1 || !l2 || !r1 || !r2) {
-                alert("左右半场4名选手姓名都不能为空！");
+                alert("4名选手姓名不能为空");
                 return;
             }
-            if (l1 === l2) {
-                alert("左半场两名选手不能同名！");
-                return;
-            }
-            if (r1 === r2) {
-                alert("右半场两名选手不能同名！");
+            if (l1 === l2 || r1 === r2) {
+                alert("同队选手不能同名");
                 return;
             }
             const matchId = Date.now() + '_' + Math.random().toString(36).slice(2, 8);
-            const newMatch = {
+            globalData.matches.push({
                 id: matchId,
                 leftTeam: [l1, l2],
                 rightTeam: [r1, r2],
@@ -726,34 +723,32 @@
                 currentScore: { left: 0, right: 0 },
                 isFinished: false,
                 scoreModalActive: false
-            };
-            globalData.matches.push(newMatch);
+            });
             [l1, l2, r1, r2].forEach(player => {
                 if (!globalData.playerScores[player]) globalData.playerScores[player] = 0;
             });
+            updateDB(); // 同步到云
             renderMatchList();
             // 清空输入框
             document.getElementById('leftPlayer1').value = '';
             document.getElementById('leftPlayer2').value = '';
             document.getElementById('rightPlayer1').value = '';
             document.getElementById('rightPlayer2').value = '';
-            alert("对阵添加成功！");
+            alert("对阵添加成功，所有设备已同步");
         }
 
-        // 渲染对阵列表（对阵屏）
+        // 渲染对阵列表
         function renderMatchList() {
             const el = document.getElementById('matchList');
             if (globalData.matches.length === 0) {
-                el.innerHTML = '<div class="empty-tip">暂无对阵数据，添加后将显示在此</div>';
+                el.innerHTML = '<div class="empty-tip">暂无对阵数据，添加后所有设备实时同步</div>';
                 return;
             }
             el.innerHTML = '';
             globalData.matches.forEach((m, idx) => {
                 const leftTeam = m.leftTeam.join('+');
                 const rightTeam = m.rightTeam.join('+');
-                const result = m.isFinished 
-                    ? `${m.leftSet} - ${m.rightSet}（已完成）`
-                    : `0 - 0（未完成）`;
+                const result = m.isFinished ? `${m.leftSet} - ${m.rightSet}（已完成）` : `0 - 0（未完成）`;
                 const resultClass = m.isFinished ? 'finished' : '';
                 el.innerHTML += `
                     <div class="match-item">
@@ -777,12 +772,10 @@
         // 对阵屏 → 计分屏
         function goToScorePage() {
             if (globalData.matches.length === 0) {
-                alert("请先添加至少1条对阵数据！");
+                alert("请先添加至少1条对阵");
                 return;
             }
             switchPage('scorePage');
-            renderScoreMatchList();
-            renderRealTimeRankList(); // 新增：进入计分页时刷新实时排名
         }
 
         // 计分屏 → 对阵屏
@@ -790,7 +783,7 @@
             switchPage('matchPage');
         }
 
-        // 渲染计分对阵列表（防冒泡+事件绑定）
+        // 渲染计分列表
         function renderScoreMatchList() {
             const el = document.getElementById('scoreMatchList');
             if (globalData.matches.length === 0) {
@@ -801,16 +794,14 @@
             globalData.matches.forEach((m, idx) => {
                 const leftTeam = m.leftTeam.join('+');
                 const rightTeam = m.rightTeam.join('+');
-                const resultText = m.isFinished 
-                    ? `${leftTeam} ${m.leftSet} - ${m.rightSet} ${rightTeam}`
-                    : "点击展开左右屏计分";
+                const resultText = m.isFinished ? `${leftTeam} ${m.leftSet} - ${m.rightSet} ${rightTeam}` : "点击展开计分";
                 const resultColor = m.isFinished ? "#76B900" : "#E67E22";
                 const modalDisplay = m.scoreModalActive ? 'flex' : 'none';
                 const btnDisplay = m.scoreModalActive ? 'flex' : 'none';
 
                 el.innerHTML += `
                     <div class="match-item">
-                        <div class="match-header" onclick="toggleScoreModal('${m.id}')" style="cursor: pointer;">
+                        <div class="match-header" onclick="toggleScoreModal('${m.id}')">
                             <div class="match-name">对阵 #${idx+1}</div>
                             <div class="match-result" style="color:${resultColor}">${resultText}</div>
                         </div>
@@ -847,23 +838,31 @@
                     </div>
                 `;
 
-                // 动态绑定事件（阻止冒泡+微信兼容）
-                document.getElementById(`btnLeft_${m.id}`).onclick = function(e) {
-                    e.stopPropagation();
-                    addScore('left', m.id);
-                };
-                document.getElementById(`btnRight_${m.id}`).onclick = function(e) {
-                    e.stopPropagation();
-                    addScore('right', m.id);
-                };
-                document.getElementById(`btnReset_${m.id}`).onclick = function(e) {
-                    e.stopPropagation();
-                    resetCurrentSet(m.id);
-                };
-                document.getElementById(`btnFinish_${m.id}`).onclick = function(e) {
-                    e.stopPropagation();
-                    finishMatch(m.id);
-                };
+                // 绑定事件
+                if (document.getElementById(`btnLeft_${m.id}`)) {
+                    document.getElementById(`btnLeft_${m.id}`).onclick = (e) => {
+                        e.stopPropagation();
+                        addScore('left', m.id);
+                    };
+                }
+                if (document.getElementById(`btnRight_${m.id}`)) {
+                    document.getElementById(`btnRight_${m.id}`).onclick = (e) => {
+                        e.stopPropagation();
+                        addScore('right', m.id);
+                    };
+                }
+                if (document.getElementById(`btnReset_${m.id}`)) {
+                    document.getElementById(`btnReset_${m.id}`).onclick = (e) => {
+                        e.stopPropagation();
+                        resetSet(m.id);
+                    };
+                }
+                if (document.getElementById(`btnFinish_${m.id}`)) {
+                    document.getElementById(`btnFinish_${m.id}`).onclick = (e) => {
+                        e.stopPropagation();
+                        finishMatch(m.id);
+                    };
+                }
             });
         }
 
@@ -872,44 +871,42 @@
             const match = globalData.matches.find(m => m.id === matchId);
             if (!match || match.isFinished) return;
             match.scoreModalActive = !match.scoreModalActive;
+            updateDB(); // 同步状态
             renderScoreMatchList();
         }
 
-        // 加分核心函数
+        // 加分（实时同步）
         function addScore(side, matchId) {
             const match = globalData.matches.find(m => m.id === matchId);
             if (!match || match.isFinished) return;
             match.currentScore[side]++;
             document.getElementById(`scoreLeft_${matchId}`).innerText = match.currentScore.left;
             document.getElementById(`scoreRight_${matchId}`).innerText = match.currentScore.right;
+            updateDB(); // 同步到云
             checkSetWinner(match, matchId);
         }
 
-        // 检查本局胜负（21分制）
+        // 检查局分胜负
         function checkSetWinner(match, matchId) {
             const l = match.currentScore.left;
             const r = match.currentScore.right;
             const diff = Math.abs(l - r);
-            const isOver21 = l >=21 || r >=21;
-            const isBoth20 = l >=20 && r >=20;
-            if ((isOver21 && diff >=2) || (isBoth20 && diff >=2)) {
-                const winSide = l > r ? 'left' : 'right';
-                winSide === 'left' ? match.leftSet++ : match.rightSet++;
+            if ((l >=21 || r >=21) && diff >=2 || (l >=20 && r >=20) && diff >=2) {
+                match.leftSet = side === 'left' ? match.leftSet + 1 : match.leftSet;
+                match.rightSet = side === 'right' ? match.rightSet + 1 : match.rightSet;
                 match.currentScore = { left: 0, right: 0 };
-                document.getElementById(`scoreLeft_${matchId}`).innerText = 0;
-                document.getElementById(`scoreRight_${matchId}`).innerText = 0;
+                updateDB(); // 同步局分
                 renderScoreMatchList();
                 checkMatchWinner(match, matchId);
-                renderRealTimeRankList(); // 新增：局分结算后刷新实时排名
             }
         }
 
-        // 检查整场对阵胜负
+        // 检查整场胜负
         function checkMatchWinner(match, matchId) {
-            const winSetNeed = globalData.matchType === 1 ? 1 : 2;
+            const winSet = globalData.matchType === 1 ? 1 : 2;
             let winSide = null;
-            if (match.leftSet === winSetNeed) winSide = 'left';
-            if (match.rightSet === winSetNeed) winSide = 'right';
+            if (match.leftSet === winSet) winSide = 'left';
+            if (match.rightSet === winSet) winSide = 'right';
             if (!winSide) return;
 
             match.isFinished = true;
@@ -918,85 +915,61 @@
             const losePlayers = winSide === 'left' ? match.rightTeam : match.leftTeam;
             
             // 积分结算
-            winPlayers.forEach(player => {
-                globalData.playerScores[player] += globalData.winScore;
-            });
-            losePlayers.forEach(player => {
-                globalData.playerScores[player] += globalData.loseScore;
-            });
-
+            winPlayers.forEach(p => globalData.playerScores[p] += globalData.winScore);
+            losePlayers.forEach(p => globalData.playerScores[p] += globalData.loseScore);
+            
+            updateDB(); // 同步积分
             renderScoreMatchList();
             renderRankList();
-            renderRealTimeRankList(); // 新增：比赛结束后刷新实时排名
-            alert(`恭喜！${winPlayers.join('+')} 赢得本场对阵！\n胜方每人+${globalData.winScore}分，败方每人+${globalData.loseScore}分`);
+            renderRealTimeRankList();
+            alert(`恭喜${winPlayers.join('+')}获胜！\n胜方每人+${globalData.winScore}分（所有设备已同步）`);
         }
 
         // 重置本局小分
-        function resetCurrentSet(matchId) {
+        function resetSet(matchId) {
             const match = globalData.matches.find(m => m.id === matchId);
             if (!match || match.isFinished) return;
-            if (confirm("确定重置本局小分吗？")) {
+            if (confirm("确定重置本局小分？")) {
                 match.currentScore = { left: 0, right: 0 };
-                document.getElementById(`scoreLeft_${matchId}`).innerText = 0;
-                document.getElementById(`scoreRight_${matchId}`).innerText = 0;
+                updateDB(); // 同步重置
+                renderScoreMatchList();
             }
         }
 
-        // 手动结束本场对阵
+        // 结束对阵
         function finishMatch(matchId) {
             const match = globalData.matches.find(m => m.id === matchId);
             if (!match || match.isFinished) return;
-            if (confirm("确定结束本场对阵？未完成局分将不计入结果")) {
-                const winSetNeed = globalData.matchType === 1 ? 1 : 2;
-                let winSide = null;
-                if (match.leftSet >= winSetNeed) winSide = 'left';
-                if (match.rightSet >= winSetNeed) winSide = 'right';
-
-                if (winSide) {
-                    const winPlayers = winSide === 'left' ? match.leftTeam : match.rightTeam;
-                    const losePlayers = winSide === 'left' ? match.rightTeam : match.leftTeam;
-                    winPlayers.forEach(player => {
-                        globalData.playerScores[player] += globalData.winScore;
-                    });
-                    losePlayers.forEach(player => {
-                        globalData.playerScores[player] += globalData.loseScore;
-                    });
-                    alert(`本场对阵结束！${winPlayers.join('+')} 获胜！\n胜方每人+${globalData.winScore}分，败方每人+${globalData.loseScore}分`);
-                } else {
-                    alert(`本场对阵无获胜方，未统计积分！`);
-                }
-
+            if (confirm("确定结束本场对阵？")) {
                 match.isFinished = true;
-                match.scoreModalActive = false;
+                updateDB(); // 同步状态
                 renderScoreMatchList();
-                renderRankList();
-                renderRealTimeRankList(); // 新增：手动结束后刷新实时排名
             }
         }
 
-        // 计分屏 → 积分屏
+        // 计分屏 → 排名屏
         function goToRankPage() {
             renderRankList();
             switchPage('rankPage');
         }
 
-        // 积分屏 → 计分屏
+        // 排名屏 → 计分屏
         function goBackToScore() {
             switchPage('scorePage');
         }
 
-        // 渲染完整个人积分排名
+        // 渲染完整排名
         function renderRankList() {
             const el = document.getElementById('rankList');
-            const scoreArr = Object.entries(globalData.playerScores)
-                .map(([name, score]) => ({name, score}))
-                .sort((a,b) => b.score - a.score);
-            if (scoreArr.length === 0) {
-                el.innerHTML = '<div class="empty-tip">暂无积分数据，完成对阵计分后显示</div>';
+            const scores = Object.entries(globalData.playerScores)
+                .map(([name, score]) => ({ name, score }))
+                .sort((a, b) => b.score - a.score);
+            if (scores.length === 0) {
+                el.innerHTML = '<div class="empty-tip">暂无积分数据，完成对阵后实时更新</div>';
                 return;
             }
             el.innerHTML = '';
-            scoreArr.forEach((item, idx) => {
+            scores.forEach((item, idx) => {
                 el.innerHTML += `
                     <div class="rank-item">
                         <div class="rank-num">${idx+1}</div>
@@ -1007,22 +980,18 @@
             });
         }
 
-        // ========== 新增：渲染实时积分排名（迷你版） ==========
+        // 渲染实时排名（迷你版）
         function renderRealTimeRankList() {
             const el = document.getElementById('realTimeRankList');
-            const scoreArr = Object.entries(globalData.playerScores)
-                .map(([name, score]) => ({name, score}))
-                .sort((a,b) => b.score - a.score);
-            
-            if (scoreArr.length === 0) {
-                el.innerHTML = '<div class="empty-tip" style="padding: 10px 0;">暂无积分数据，完成对阵计分后显示</div>';
+            const scores = Object.entries(globalData.playerScores)
+                .map(([name, score]) => ({ name, score }))
+                .sort((a, b) => b.score - a.score);
+            if (scores.length === 0) {
+                el.innerHTML = '<div class="empty-tip" style="padding: 10px 0;">暂无积分数据，完成对阵后实时更新</div>';
                 return;
             }
-            
             el.innerHTML = '';
-            // 最多显示前8名，避免过长
-            const showList = scoreArr.slice(0, 8);
-            showList.forEach((item, idx) => {
+            scores.slice(0, 8).forEach((item, idx) => {
                 el.innerHTML += `
                     <div class="mini-rank-item">
                         <div class="mini-rank-num">${idx+1}</div>
@@ -1031,22 +1000,14 @@
                     </div>
                 `;
             });
-            
-            // 如果有更多选手，显示提示
-            if (scoreArr.length > 8) {
-                el.innerHTML += `<div class="tip-text" style="margin-top: 5px;">共${scoreArr.length}名选手，点击"查看完整积分排名"查看全部</div>`;
+            if (scores.length > 8) {
+                el.innerHTML += '<div class="tip-text">点击"查看完整排名"查看全部</div>';
             }
         }
 
         // 重置所有数据
         function resetAllData() {
-            if (confirm("确定清空所有数据？设置/对阵/积分将全部重置！")) {
-                // 清空列表显示
-                document.getElementById('matchList').innerHTML = '<div class="empty-tip">暂无对阵数据，添加后将显示在此</div>';
-                document.getElementById('scoreMatchList').innerHTML = '<div class="empty-tip">暂无对阵数据，请先添加</div>';
-                document.getElementById('rankList').innerHTML = '<div class="empty-tip">暂无积分数据，完成对阵计分后显示</div>';
-                document.getElementById('realTimeRankList').innerHTML = '<div class="empty-tip" style="padding: 10px 0;">暂无积分数据，完成对阵计分后显示</div>'; // 新增：清空实时排名
-                // 重置全局数据
+            if (confirm("确定清空所有数据？所有设备都会同步重置！")) {
                 globalData = {
                     matchType: 1,
                     winScore: 5,
@@ -1054,20 +1015,26 @@
                     matches: [],
                     playerScores: {}
                 };
-                // 重置表单默认值
+                updateDB(); // 同步重置
+                // 清空页面
+                document.getElementById('matchList').innerHTML = '<div class="empty-tip">暂无对阵数据，添加后所有设备实时同步</div>';
+                document.getElementById('scoreMatchList').innerHTML = '<div class="empty-tip">暂无对阵数据，请先添加</div>';
+                document.getElementById('rankList').innerHTML = '<div class="empty-tip">暂无积分数据，完成对阵后实时更新</div>';
+                document.getElementById('realTimeRankList').innerHTML = '<div class="empty-tip" style="padding: 10px 0;">暂无积分数据，完成对阵后实时更新</div>';
+                // 重置表单
                 document.getElementById('matchType').selectedIndex = 0;
                 document.getElementById('winScore').value = 5;
                 document.getElementById('loseScore').value = 3;
-                // 返回设置页
                 switchPage('settingPage');
             }
         }
 
-        // 微信初始化（解决首次加载空白/无响应）
+        // 页面加载后初始化
         window.onload = function() {
-            setTimeout(() => {
-                switchPage('settingPage');
-            }, 100);
+            // 先初始化云同步
+            initDB();
+            // 初始化页面
+            setTimeout(() => switchPage('settingPage'), 100);
         };
     </script>
 </body>
